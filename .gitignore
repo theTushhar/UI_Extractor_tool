@@ -1,0 +1,45 @@
+
+# Sensitive File
+.env
+
+# User specific Scenario Folder
+# generated_scenarios
+
+# Virtual Environment 
+.venv
+
+# Cache Folder
+__pycache__
+
+infoqa-ai-backend-output.md
+infoqa-ai-backend-output.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

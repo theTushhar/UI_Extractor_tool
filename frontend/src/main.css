@@ -1,0 +1,6 @@
+@import 'bulma/css/bulma.min.css';
+
+/* Add any custom global styles here */
+html {
+    background-color: #0d1117; /* GitHub Dark Default */
+}
