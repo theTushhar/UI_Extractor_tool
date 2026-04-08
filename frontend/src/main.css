@@ -1,6 +1,88 @@
-@import 'bulma/css/bulma.min.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Add any custom global styles here */
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --bg-base: #0a0f1e;
+  --bg-surface: #111827;
+  --bg-elevated: #1a2235;
+  --bg-border: #1f2937;
+  --primary: #6366f1;
+  --accent: #06b6d4;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
 html {
-    background-color: #0d1117; /* GitHub Dark Default */
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-base);
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4a5568; }
+
+/* ── Custom utilities ───────────────────────────────────────── */
+@layer utilities {
+  .glass {
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-glow {
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+  }
+
+  .border-glow-accent {
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.08);
+  }
+}
+
+/* ── Textarea ───────────────────────────────────────────────── */
+textarea {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ── Table row hover ────────────────────────────────────────── */
+.table-row-hover {
+  transition: background-color 0.15s ease;
+}
+.table-row-hover:hover {
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+/* ── Sheet overlay ──────────────────────────────────────────── */
+.sheet-overlay {
+  background: rgba(10, 15, 30, 0.6);
+  backdrop-filter: blur(4px);
 }
