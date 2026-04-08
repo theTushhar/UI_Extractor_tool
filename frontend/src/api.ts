@@ -1,10 +1,4 @@
-const BASE_URL = 'http://localhost:8000';
-
-const maskApiKey = (apiKey: string) => {
-  if (!apiKey) return '(missing)';
-  if (apiKey.length <= 8) return '***';
-  return `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`;
-};
+const BASE_URL = 'http://localhost:8001';
 
 const logRequest = (label: string, payload?: unknown) => {
   console.debug(`[api] ${label}`, payload ?? '');
@@ -49,24 +43,11 @@ const postJson = async (path: string, body?: Record<string, unknown>) => {
 };
 
 export const api = {
-  openBrowser: async (url: string) => {
-    return postJson('/open-browser', { url });
+  extractLocators: async (html: string) => {
+    return postJson('/v1/locators/extract', { html });
   },
 
-  closeBrowser: async () => {
-    return postJson('/close-browser');
-  },
-
-  scanPage: async (goal: string, apiKey: string, model: string) => {
-    logRequest('scanPage metadata', {
-      goalPreview: goal.slice(0, 80),
-      model,
-      apiKey: maskApiKey(apiKey),
-    });
-    return postJson('/scan-page', { goal, api_key: apiKey, model });
-  },
-
-  highlightElement: async (selector: string) => {
-    return postJson('/highlight-element', { selector });
+  generatePathBasedTestCases: async (requirement: string, userPrompt: string, maxPaths: number = 32) => {
+    return postJson('/v1/testcases/path-based', { requirement, user_prompt: userPrompt, max_paths: maxPaths });
   },
 };
