@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Copy, CheckCircle, Terminal } from "lucide-react";
-import type { LocatorCandidate } from "../types";
+import { ChevronDown, ChevronRight, Copy, CheckCircle, Terminal, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import type { LocatorCandidate, VerificationResult } from "../types";
 
 interface Props {
   locator: LocatorCandidate;
   isRecommended?: boolean;
   onCopy: (value: string) => void;
+  verification?: VerificationResult;
 }
 
 function scoreColor(score: number) {
@@ -20,7 +21,7 @@ function scoreBg(score: number) {
   return "bg-score-low";
 }
 
-export function LocatorRow({ locator, isRecommended, onCopy }: Props) {
+export function LocatorRow({ locator, isRecommended, onCopy, verification }: Props) {
   const [expanded, setExpanded] = useState(isRecommended ?? false);
   const [copied, setCopied] = useState(false);
   const [copiedPW, setCopiedPW] = useState(false);
@@ -82,6 +83,32 @@ export function LocatorRow({ locator, isRecommended, onCopy }: Props) {
           <span className="text-xs px-1.5 py-0.5 rounded-md bg-mode-input/15 text-mode-input border border-mode-input/20 flex-shrink-0">
             unique
           </span>
+        )}
+
+        {/* Verification Status */}
+        {verification && (
+          <div className="flex items-center gap-1.5 ml-2">
+             {verification.status === 'correct' && (
+               <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                 <ShieldCheck size={10} /> Correct
+               </span>
+             )}
+             {verification.status === 'duplicate' && (
+               <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                 <ShieldAlert size={10} /> Duplicate ({verification.match_count})
+               </span>
+             )}
+             {verification.status === 'broken' && (
+               <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                 <ShieldX size={10} /> Broken
+               </span>
+             )}
+             {verification.status === 'misidentified' && (
+               <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                 <ShieldAlert size={10} /> Wrong Element
+               </span>
+             )}
+          </div>
         )}
 
         {/* Expand icon */}

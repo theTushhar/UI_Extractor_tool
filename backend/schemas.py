@@ -15,6 +15,7 @@ class LocatorCandidate(BaseModel):
 
 
 class RecommendedLocator(BaseModel):
+    rank: int
     strategy: str
     value: str
     score: int
@@ -26,6 +27,7 @@ class ExtractedElement(BaseModel):
     element_name: str
     mode: Literal["Input", "Output", "UserAction", "Unknown"] = "Unknown"
     element_type: str
+    absolute_xpath: str
     attributes: dict[str, str]
     recommended_locator: RecommendedLocator
     locators: list[LocatorCandidate]
@@ -36,6 +38,16 @@ class ExtractResponse(BaseModel):
     total_elements: int
     stable_elements: int
     elements: list[ExtractedElement]
+
+
+class VerifyRequest(BaseModel):
+    html: str
+    elements: list[dict]
+
+
+class VerifyResponse(BaseModel):
+    verified_elements: list[dict]
+    summary: dict[str, int]
 
 
 

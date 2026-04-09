@@ -4,9 +4,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from schemas import (
     ExtractRequest, 
-    ExtractResponse
+    ExtractResponse,
+    VerifyRequest,
+    VerifyResponse
 )
-from extractor import extract_from_html
+from extractor import extract_from_html, verify_locators_in_html
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,5 +48,15 @@ def extract_locators(payload: ExtractRequest) -> ExtractResponse:
         extracted.get("stable_elements", 0),
     )
     return ExtractResponse.model_validate(extracted)
+    
+
+@app.post("/v1/locators/verify", response_model=VerifyResponse)
+def verify_locators(payload: VerifyRequest) -> VerifyResponse:
+    logger.info("Verification started: elements=%d", len(payload.elements))
+    results = verify_locators_in_html(payload.html, payload.elements)
+    logger.info("Verification completed: correct=%d broken=%d", 
+                results["summary"]["correct_locators"],
+                results["summary"]["broken_locators"])
+    return VerifyResponse.model_validate(results)
 
 

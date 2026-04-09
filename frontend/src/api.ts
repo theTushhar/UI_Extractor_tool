@@ -46,6 +46,9 @@ export const api = {
   extractLocators: async (html: string) => {
     return postJson('/v1/locators/extract', { html });
   },
+  verifyLocators: async (html: string, elements: any[]) => {
+    return postJson('/v1/locators/verify', { html, elements });
+  },
 
 
 };

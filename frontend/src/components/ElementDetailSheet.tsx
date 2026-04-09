@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { X, Copy, CheckCircle, ChevronDown, ChevronRight, Tag, Layers } from "lucide-react";
-import type { ExtractedElement, ElementMode } from "../types";
+import type { ExtractedElement, ElementMode, VerificationResult } from "../types";
 import { LocatorRow } from "./LocatorRow";
 
 interface Props {
   element: ExtractedElement | null;
   onClose: () => void;
   onCopy: (value: string) => void;
+  verification?: VerificationResult[];
 }
 
 const modeStyle: Record<ElementMode, { badge: string; dot: string }> = {
@@ -22,7 +23,7 @@ function scoreColor(score: number) {
   return "text-score-low";
 }
 
-export function ElementDetailSheet({ element, onClose, onCopy }: Props) {
+export function ElementDetailSheet({ element, onClose, onCopy, verification }: Props) {
   const [attrOpen, setAttrOpen] = useState(false);
   const [recoCopied, setRecoCopied] = useState(false);
 
@@ -74,6 +75,10 @@ export function ElementDetailSheet({ element, onClose, onCopy }: Props) {
               <h2 className="text-base font-semibold text-slate-100 truncate" title={element.element_name}>
                 {element.element_name}
               </h2>
+              <div className="flex items-center gap-1.5 mt-1.5 opacity-60">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Identity (XPath)</span>
+                <code className="text-[10px] font-mono text-slate-400 break-all">{element.absolute_xpath}</code>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -145,6 +150,7 @@ export function ElementDetailSheet({ element, onClose, onCopy }: Props) {
                     locator={loc}
                     isRecommended={loc.value === element.recommended_locator.value}
                     onCopy={onCopy}
+                    verification={verification?.find(v => v.rank === loc.rank)}
                   />
                 ))}
               </div>

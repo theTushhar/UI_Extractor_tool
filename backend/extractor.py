@@ -577,6 +577,7 @@ def extract_from_html(html_content: str) -> dict:
             stable_count += 1
 
         element_name = _derive_name(el, root, element_type)
+        absolute_xpath = tree.getpath(el)
         attrs = {
             key: value
             for key, value in (el.attrib or {}).items()
@@ -589,8 +590,10 @@ def extract_from_html(html_content: str) -> dict:
                 "element_name": element_name,
                 "mode": mode,
                 "element_type": element_type,
+                "absolute_xpath": absolute_xpath,
                 "attributes": attrs,
                 "recommended_locator": {
+                    "rank": 1,
                     "strategy": recommended.strategy,
                     "value": recommended.value,
                     "score": recommended.score,
@@ -614,4 +617,78 @@ def extract_from_html(html_content: str) -> dict:
         "total_elements": len(elements),
         "stable_elements": stable_count,
         "elements": elements,
+    }
+
+
+def verify_locators_in_html(html_content: str, elements_data: list[dict]) -> dict:
+    """
+    Verifies a list of locators against HTML content using absolute XPath as ground truth.
+    """
+    root = html.fromstring(html_content)
+    tree = root.getroottree()
+    
+    results = []
+    
+    for element in elements_data:
+        ground_truth_xpath = element.get("absolute_xpath")
+        verified_locators = []
+        
+        for loc in element.get("locators", []):
+            strategy = loc.get("strategy", "")
+            value = loc.get("value", "")
+            
+            matches = []
+            try:
+                if strategy.startswith("xpath:"):
+                    matches = root.xpath(value)
+                else:
+                    selector = CSSSelector(value)
+                    matches = selector(root)
+            except Exception:
+                pass
+            
+            status = "broken"
+            match_count = len(matches)
+            is_correct_element = False
+            
+            if match_count == 0:
+                status = "broken"
+            elif match_count > 1:
+                status = "duplicate"
+                # Check if the intended element is among the duplicates
+                for match in matches:
+                    if tree.getpath(match) == ground_truth_xpath:
+                        is_correct_element = True
+                        break
+            else:
+                # Exactly one match. Is it the right one?
+                if tree.getpath(matches[0]) == ground_truth_xpath:
+                    status = "correct"
+                    is_correct_element = True
+                else:
+                    status = "misidentified"
+            
+            verified_locators.append({
+                "rank": loc.get("rank"),
+                "strategy": strategy,
+                "value": value,
+                "status": status,
+                "match_count": match_count,
+                "is_correct_element": is_correct_element
+            })
+            
+        results.append({
+            "element_name": element.get("element_name"),
+            "absolute_xpath": ground_truth_xpath,
+            "verification": verified_locators
+        })
+        
+    return {
+        "verified_elements": results,
+        "summary": {
+            "total_elements": len(elements_data),
+            "correct_locators": sum(1 for el in results for v in el["verification"] if v["status"] == "correct"),
+            "broken_locators": sum(1 for el in results for v in el["verification"] if v["status"] == "broken"),
+            "duplicate_locators": sum(1 for el in results for v in el["verification"] if v["status"] == "duplicate"),
+        }
     }

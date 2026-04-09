@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
-import { Scan, Loader2, AlertCircle, Sparkles, Code2, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Scan, Loader2, AlertCircle, Sparkles, Code2, RotateCcw, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { api } from "./api";
-import type { ExtractResponse, ExtractedElement, Filters } from "./types";
+import type { ExtractResponse, ExtractedElement, Filters, VerifiedElement } from "./types";
 import { InteractiveStatsCards } from "./components/InteractiveStatsCards";
 import { FilterBar } from "./components/FilterBar";
 import { ElementsTable } from "./components/ElementsTable";
@@ -32,6 +32,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<ExtractedElement | null>(null);
+  const [verifications, setVerifications] = useState<VerifiedElement[] | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [inputExpanded, setInputExpanded] = useState(false); // collapsed after extraction
   const [filters, setFilters] = useState<Filters>({
@@ -46,6 +48,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     setResults(null);
+    setVerifications(null);
     setSelectedElement(null);
     setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false });
     try {
@@ -56,6 +59,20 @@ export default function App() {
       setError(err.message ?? "Extraction failed. Is the backend running?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!results || !htmlInput) return;
+    setVerifying(true);
+    try {
+      const data = await api.verifyLocators(htmlInput, results.elements);
+      setVerifications(data.verified_elements);
+      setToast(`Verification complete: ${data.summary.correct_locators} correct, ${data.summary.broken_locators} broken`);
+    } catch (err: any) {
+      setToast(`Verification failed: ${err.message}`);
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -286,6 +303,24 @@ export default function App() {
                 </p>
               </div>
 
+              {/* Verify Button */}
+              <button
+                onClick={handleVerify}
+                disabled={verifying}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                  verifications 
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" 
+                    : "border-primary/30 bg-primary/10 text-primary-light hover:bg-primary/20"
+                }`}
+              >
+                {verifying ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <ShieldCheck size={12} />
+                )}
+                {verifications ? "Re-verify Locators" : "Verify All Locators"}
+              </button>
+
               {/* Divider */}
               <div className="w-px h-7 bg-bg-border flex-shrink-0" />
 
@@ -309,6 +344,7 @@ export default function App() {
               filters={filters}
               onSelectElement={setSelectedElement}
               onCopy={handleCopy}
+              verifications={verifications ?? undefined}
             />
           </div>
         )}
@@ -319,6 +355,7 @@ export default function App() {
         element={selectedElement}
         onClose={() => setSelectedElement(null)}
         onCopy={handleCopy}
+        verification={verifications?.find(v => v.absolute_xpath === selectedElement?.absolute_xpath)?.verification}
       />
 
       {/* ── Toast ── */}

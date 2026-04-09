@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { ChevronUp, ChevronDown, Copy } from "lucide-react";
-import type { ExtractedElement, ElementMode, SortField, SortDir, Filters } from "../types";
+import { ChevronUp, ChevronDown, Copy, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import type { ExtractedElement, ElementMode, SortField, SortDir, Filters, VerifiedElement } from "../types";
 
 interface Props {
   elements: ExtractedElement[];
   filters: Filters;
   onSelectElement: (el: ExtractedElement) => void;
   onCopy: (value: string) => void;
+  verifications?: VerifiedElement[];
 }
 
 const modeStyles: Record<ElementMode, string> = {
@@ -86,7 +87,7 @@ const columns: { key: SortField; label: string; width?: string }[] = [
   { key: "locators", label: "Locators", width: "w-[10%]" },
 ];
 
-export function ElementsTable({ elements, filters, onSelectElement, onCopy }: Props) {
+export function ElementsTable({ elements, filters, onSelectElement, onCopy, verifications }: Props) {
   const [sortField, setSortField] = useState<SortField>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -171,12 +172,29 @@ export function ElementsTable({ elements, filters, onSelectElement, onCopy }: Pr
                 </span>
               </div>
 
-              {/* Locator count */}
-              <div className="w-[10%]">
-                <span className="px-2 py-0.5 rounded-md text-xs bg-bg-elevated border border-bg-border text-slate-400 font-mono">
-                  {el.locators.length}
-                </span>
-              </div>
+                {/* Verification Status (Table View) */}
+                {verifications && (
+                  <div className="w-[10%] flex items-center gap-1">
+                    {(() => {
+                      const v = verifications.find(x => x.absolute_xpath === el.absolute_xpath);
+                      if (!v) return null;
+                      // Find best rank match
+                      const res = v.verification[0]; 
+                      if (!res) return null;
+                      
+                      if (res.status === 'correct') return <ShieldCheck size={14} className="text-emerald-400" />;
+                      if (res.status === 'duplicate') return <ShieldAlert size={14} className="text-yellow-400" />;
+                      if (res.status === 'broken') return <ShieldX size={14} className="text-rose-400" />;
+                      return <ShieldAlert size={14} className="text-orange-400" />;
+                    })()}
+                  </div>
+                )}
+
+                <div className={verifications ? "w-[10%]" : "w-[10%]"}>
+                  <span className="px-2 py-0.5 rounded-md text-xs bg-bg-elevated border border-bg-border text-slate-400 font-mono">
+                    {el.locators.length}
+                  </span>
+                </div>
 
               {/* Recommended locator value + copy */}
               <div className="w-[20%] flex items-center gap-2 justify-end min-w-0 pl-2">
