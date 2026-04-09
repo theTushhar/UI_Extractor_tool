@@ -4,11 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from schemas import (
     ExtractRequest, 
-    ExtractResponse, 
-    PathBasedTestCaseRequest, 
-    PathBasedTestCaseResponse
+    ExtractResponse
 )
-from extractor import extract_from_html, generate_path_based_test_cases
+from extractor import extract_from_html
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,24 +47,4 @@ def extract_locators(payload: ExtractRequest) -> ExtractResponse:
     )
     return ExtractResponse.model_validate(extracted)
 
-@app.post("/v1/testcases/path-based", response_model=PathBasedTestCaseResponse)
-def generate_path_based(payload: PathBasedTestCaseRequest) -> PathBasedTestCaseResponse:
-    request_id = str(uuid.uuid4())[:8]
-    logger.info(
-        "Path-based generation started: id=%s requirement_len=%d user_prompt_len=%d",
-        request_id,
-        len(payload.requirement),
-        len(payload.user_prompt),
-    )
-    generated = generate_path_based_test_cases(
-        requirement=payload.requirement,
-        user_prompt=payload.user_prompt,
-        max_paths=payload.max_paths,
-    )
-    logger.info(
-        "Path-based generation completed: id=%s paths=%d test_cases=%d",
-        request_id,
-        len(generated.get("unique_paths", [])),
-        len(generated.get("test_case_summary", [])),
-    )
-    return PathBasedTestCaseResponse.model_validate(generated)
+

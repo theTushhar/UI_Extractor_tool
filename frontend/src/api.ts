@@ -47,7 +47,5 @@ export const api = {
     return postJson('/v1/locators/extract', { html });
   },
 
-  generatePathBasedTestCases: async (requirement: string, userPrompt: string, maxPaths: number = 32) => {
-    return postJson('/v1/testcases/path-based', { requirement, user_prompt: userPrompt, max_paths: maxPaths });
-  },
+
 };
