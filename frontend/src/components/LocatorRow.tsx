@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Copy, CheckCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, CheckCircle, Terminal } from "lucide-react";
 import type { LocatorCandidate } from "../types";
 
 interface Props {
@@ -23,6 +23,7 @@ function scoreBg(score: number) {
 export function LocatorRow({ locator, isRecommended, onCopy }: Props) {
   const [expanded, setExpanded] = useState(isRecommended ?? false);
   const [copied, setCopied] = useState(false);
+  const [copiedPW, setCopiedPW] = useState(false);
 
   function handleCopy(e: React.MouseEvent) {
     e.stopPropagation();
@@ -30,6 +31,16 @@ export function LocatorRow({ locator, isRecommended, onCopy }: Props) {
       setCopied(true);
       onCopy(locator.value);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function handleCopyPW(e: React.MouseEvent) {
+    e.stopPropagation();
+    const pwValue = `page.locator('${locator.value.replace(/'/g, "\\'")}')`;
+    navigator.clipboard.writeText(pwValue).then(() => {
+      setCopiedPW(true);
+      onCopy(pwValue);
+      setTimeout(() => setCopiedPW(false), 2000);
     });
   }
 
@@ -88,8 +99,20 @@ export function LocatorRow({ locator, isRecommended, onCopy }: Props) {
               {locator.value}
             </div>
             <button
+              onClick={handleCopyPW}
+              title="Copy as Playwright locator"
+              className={`flex-shrink-0 px-2 h-9 flex items-center justify-center gap-2 rounded-lg border text-xs font-semibold transition-all ${
+                copiedPW
+                  ? "border-primary/50 bg-primary/15 text-primary-light"
+                  : "border-bg-border bg-bg-surface text-slate-400 hover:border-primary/50 hover:text-primary-light"
+              }`}
+            >
+              {copiedPW ? <CheckCircle size={14} /> : <Terminal size={14} />}
+              <span>Playwright</span>
+            </button>
+            <button
               onClick={handleCopy}
-              title="Copy locator"
+              title="Copy raw locator"
               className={`flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
                 copied
                   ? "border-mode-input/50 bg-mode-input/15 text-mode-input"

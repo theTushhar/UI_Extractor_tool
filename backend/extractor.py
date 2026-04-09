@@ -408,6 +408,49 @@ def _build_locators(el: HtmlElement, root: HtmlElement, tree: etree._ElementTree
                 rationale="Text-based locator helps when attributes are weak.",
             )
         )
+        if len(text) > 20:
+            partial = text[:20]
+            raw.append(
+                RawCandidate(
+                    strategy="xpath:text_contains",
+                    value=f"//{tag}[contains(normalize-space(.), {_xpath_literal(partial)})]",
+                    base_score=70,
+                    intended_stable=False,
+                    rationale="Partial text match for long or dynamic labels.",
+                )
+            )
+
+    # 5.5) Label-to-Input association (for inputs, selects, textareas).
+    if tag in {"input", "textarea", "select"}:
+        element_id = el.get("id")
+        if element_id:
+            labels = root.xpath(f"//label[@for={_xpath_literal(element_id)}]")
+            if labels:
+                label_text = _normalize_space_text(" ".join(labels[0].itertext()))
+                if label_text and len(label_text) > 1:
+                    raw.append(
+                        RawCandidate(
+                            strategy="xpath:label_for",
+                            value=f"//input[@id=//label[normalize-space(.)={_xpath_literal(label_text)}]/@for]",
+                            base_score=94,
+                            intended_stable=True,
+                            rationale="Locates input via its associated label's 'for' attribute.",
+                        )
+                    )
+        
+        parent_label = el.xpath("ancestor::label[1]")
+        if parent_label:
+            label_text = _normalize_space_text(" ".join(parent_label[0].itertext()))
+            if label_text and len(label_text) > 1:
+                raw.append(
+                    RawCandidate(
+                        strategy="xpath:label_nested",
+                        value=f"//label[contains(normalize-space(.), {_xpath_literal(label_text.split()[0])})]//{tag}",
+                        base_score=90,
+                        intended_stable=True,
+                        rationale="Locates input nested inside a descriptive label.",
+                    )
+                )
 
     class_attr = (el.get("class") or "").strip()
     if class_attr:
