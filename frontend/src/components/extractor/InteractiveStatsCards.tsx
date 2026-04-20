@@ -1,5 +1,5 @@
 import { Layers, Shield, MousePointerClick, Eye, HelpCircle, CheckCircle2 } from "lucide-react";
-import type { ExtractedElement, ElementMode, Filters } from "../types";
+import type { ExtractedElement, ElementMode, Filters } from "../../types";
 
 interface Props {
   elements: ExtractedElement[];

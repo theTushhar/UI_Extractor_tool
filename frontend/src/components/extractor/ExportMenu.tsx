@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Download, ChevronDown, FileJson, FileText, Code2, Terminal } from "lucide-react";
-import type { ExtractResponse, Filters, ExtractedElement } from "../types";
+import type { ExtractResponse, Filters, ExtractedElement } from "../../types";
 
 interface Props {
   data: ExtractResponse;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Copy, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
-import type { ExtractedElement, ElementMode, SortField, SortDir, Filters, VerifiedElement } from "../types";
+import type { ExtractedElement, ElementMode, SortField, SortDir, Filters, VerifiedElement } from "../../types";
 
 interface Props {
   elements: ExtractedElement[];

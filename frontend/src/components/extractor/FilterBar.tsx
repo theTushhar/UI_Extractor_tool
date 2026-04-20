@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, ChevronDown, X, Filter } from "lucide-react";
-import type { ElementMode, Filters } from "../types";
+import type { ElementMode, Filters } from "../../types";
 
 interface Props {
   filters: Filters;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Copy, CheckCircle, Terminal, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
-import type { LocatorCandidate, VerificationResult } from "../types";
+import type { LocatorCandidate, VerificationResult } from "../../types";
 
 interface Props {
   locator: LocatorCandidate;

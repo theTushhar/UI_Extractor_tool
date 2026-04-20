@@ -1,120 +1,52 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { Scan, Loader2, AlertCircle, Sparkles, Code2, RotateCcw, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
-import { api } from "./api";
-import type { ExtractResponse, ExtractedElement, Filters, VerifiedElement } from "./types";
-import { InteractiveStatsCards } from "./components/InteractiveStatsCards";
-import { FilterBar } from "./components/FilterBar";
-import { ElementsTable } from "./components/ElementsTable";
-import { ElementDetailSheet } from "./components/ElementDetailSheet";
-import { ExportMenu } from "./components/ExportMenu";
-import { ToastNotification } from "./components/ToastNotification";
-
-const SAMPLE_HTML = `<!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
-<body>
-  <form id="login-form">
-    <h1>Welcome back</h1>
-    <label for="email">Email</label>
-    <input id="email" type="email" name="email" placeholder="you@example.com" required />
-    <label for="password">Password</label>
-    <input id="password" type="password" name="password" placeholder="Your password" required />
-    <a href="/forgot" class="forgot-link">Forgot password?</a>
-    <button id="login-btn" type="submit" class="btn-primary">Sign In</button>
-    <p class="signup-text">Don't have an account? <a href="/signup">Sign up</a></p>
-  </form>
-</body>
-</html>`;
+import type { ExtractedElement } from "./types";
+import { InteractiveStatsCards } from "./components/extractor/InteractiveStatsCards";
+import { FilterBar } from "./components/extractor/FilterBar";
+import { ElementsTable } from "./components/extractor/ElementsTable";
+import { ElementDetailSheet } from "./components/extractor/ElementDetailSheet";
+import { ExportMenu } from "./components/extractor/ExportMenu";
+import { ToastNotification } from "./components/common/ToastNotification";
+import { useExtractor } from "./hooks/useExtractor";
+import { useFilters } from "./hooks/useFilters";
+import { useToast } from "./hooks/useToast";
+import { SAMPLE_HTML } from "./constants";
 
 export default function App() {
-  const [htmlInput, setHtmlInput] = useState("");
-  const [results, setResults] = useState<ExtractResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    htmlInput,
+    setHtmlInput,
+    results,
+    loading,
+    error,
+    verifications,
+    verifying,
+    inputExpanded,
+    setInputExpanded,
+    handleExtract,
+    handleVerify,
+    handleReset,
+  } = useExtractor();
+
+  const {
+    filters,
+    setFilters,
+    availableTypes,
+    filteredCount,
+  } = useFilters(results);
+
+  const {
+    toast,
+    setToast,
+    dismissToast,
+    handleCopy,
+  } = useToast();
+
   const [selectedElement, setSelectedElement] = useState<ExtractedElement | null>(null);
-  const [verifications, setVerifications] = useState<VerifiedElement[] | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const [inputExpanded, setInputExpanded] = useState(false); // collapsed after extraction
-  const [filters, setFilters] = useState<Filters>({
-    search: "",
-    mode: "All",
-    elementType: "All",
-    stableOnly: false,
-    minScore: 0,
-  });
 
-  const handleExtract = async () => {
-    if (!htmlInput.trim()) return;
-    setLoading(true);
-    setError(null);
-    setResults(null);
-    setVerifications(null);
-    setSelectedElement(null);
-    setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false, minScore: 0 });
-    try {
-      const data = await api.extractLocators(htmlInput);
-      setResults(data);
-      setInputExpanded(false); // collapse after successful extraction
-    } catch (err: any) {
-      setError(err.message ?? "Extraction failed. Is the backend running?");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!results || !htmlInput) return;
-    setVerifying(true);
-    try {
-      const data = await api.verifyLocators(htmlInput, results.elements);
-      setVerifications(data.verified_elements);
-      setToast(`Verification complete: ${data.summary.correct_locators} correct, ${data.summary.broken_locators} broken`);
-    } catch (err: any) {
-      setToast(`Verification failed: ${err.message}`);
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const handleReset = () => {
-    setHtmlInput("");
-    setResults(null);
-    setError(null);
-    setSelectedElement(null);
-    setToast(null);
-    setInputExpanded(false);
-    setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false, minScore: 0 });
-  };
-
-  const handleCopy = useCallback((value: string) => {
-    setToast(`Copied: ${value.length > 40 ? value.slice(0, 40) + "…" : value}`);
-  }, []);
-
-  const availableTypes = useMemo(
-    () => [...new Set(results?.elements.map((e) => e.element_type) ?? [])].sort(),
-    [results]
-  );
-
-
-  const filteredCount = useMemo(() => {
-    if (!results) return 0;
-    return results.elements.filter((el) => {
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        const match =
-          el.element_name.toLowerCase().includes(q) ||
-          el.element_type.toLowerCase().includes(q) ||
-          el.recommended_locator.value.toLowerCase().includes(q);
-        if (!match) return false;
-      }
-      if (filters.mode !== "All" && el.mode !== filters.mode) return false;
-      if (filters.elementType !== "All" && el.element_type !== filters.elementType) return false;
-      if (filters.stableOnly && el.recommended_locator.score < 80) return false;
-      if (el.recommended_locator.score < filters.minScore) return false;
-      return true;
-    }).length;
-  }, [results, filters]);
+  const onExtract = () => handleExtract(setFilters);
+  const onVerify = () => handleVerify(setToast);
+  const onReset = () => handleReset(setFilters);
 
   // Whether we show the full textarea or the collapsed summary bar
   const showCollapsed = !!results && !inputExpanded;
@@ -142,7 +74,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             {results && (
               <button
-                onClick={handleReset}
+                onClick={onReset}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-bg-border text-xs text-slate-400 hover:text-slate-200 hover:border-slate-500 hover:bg-bg-elevated transition-all"
               >
                 <RotateCcw size={12} />
@@ -227,7 +159,7 @@ export default function App() {
                 </div>
                 <button
                   id="extract-btn"
-                  onClick={handleExtract}
+                  onClick={onExtract}
                   disabled={!htmlInput.trim() || loading}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-gradient-to-r from-primary to-accent text-white hover:shadow-glow hover:scale-[1.02] active:scale-[0.98]"
                   style={{ boxShadow: loading ? "none" : "0 3px 14px rgba(99,102,241,0.35)" }}
@@ -307,7 +239,7 @@ export default function App() {
 
               {/* Verify Button */}
               <button
-                onClick={handleVerify}
+                onClick={onVerify}
                 disabled={verifying}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
                   verifications 
@@ -362,7 +294,7 @@ export default function App() {
 
       {/* ── Toast ── */}
       {toast && (
-        <ToastNotification message={toast} onDismiss={() => setToast(null)} />
+        <ToastNotification message={toast} onDismiss={dismissToast} />
       )}
     </div>
   );

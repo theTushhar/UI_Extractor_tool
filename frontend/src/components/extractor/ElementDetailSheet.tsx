@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Copy, CheckCircle, ChevronDown, ChevronRight, Tag, Layers } from "lucide-react";
-import type { ExtractedElement, ElementMode, VerificationResult } from "../types";
+import type { ExtractedElement, ElementMode, VerificationResult } from "../../types";
 import { LocatorRow } from "./LocatorRow";
 
 interface Props {
