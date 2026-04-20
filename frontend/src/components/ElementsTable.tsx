@@ -54,6 +54,7 @@ function applyFilters(elements: ExtractedElement[], filters: Filters): Extracted
     if (filters.mode !== "All" && el.mode !== filters.mode) return false;
     if (filters.elementType !== "All" && el.element_type !== filters.elementType) return false;
     if (filters.stableOnly && el.recommended_locator.score < 80) return false;
+    if (el.recommended_locator.score < filters.minScore) return false;
     return true;
   });
 }

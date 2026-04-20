@@ -41,6 +41,7 @@ export default function App() {
     mode: "All",
     elementType: "All",
     stableOnly: false,
+    minScore: 0,
   });
 
   const handleExtract = async () => {
@@ -50,7 +51,7 @@ export default function App() {
     setResults(null);
     setVerifications(null);
     setSelectedElement(null);
-    setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false });
+    setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false, minScore: 0 });
     try {
       const data = await api.extractLocators(htmlInput);
       setResults(data);
@@ -83,7 +84,7 @@ export default function App() {
     setSelectedElement(null);
     setToast(null);
     setInputExpanded(false);
-    setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false });
+    setFilters({ search: "", mode: "All", elementType: "All", stableOnly: false, minScore: 0 });
   };
 
   const handleCopy = useCallback((value: string) => {
@@ -110,6 +111,7 @@ export default function App() {
       if (filters.mode !== "All" && el.mode !== filters.mode) return false;
       if (filters.elementType !== "All" && el.element_type !== filters.elementType) return false;
       if (filters.stableOnly && el.recommended_locator.score < 80) return false;
+      if (el.recommended_locator.score < filters.minScore) return false;
       return true;
     }).length;
   }, [results, filters]);
@@ -335,7 +337,7 @@ export default function App() {
               />
 
               {/* Export */}
-              <ExportMenu data={results} />
+              <ExportMenu data={results} filters={filters} />
             </div>
 
             {/* Table */}

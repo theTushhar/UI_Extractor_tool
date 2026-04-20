@@ -1,9 +1,34 @@
 import { useState, useRef, useEffect } from "react";
 import { Download, ChevronDown, FileJson, FileText, Code2, Terminal } from "lucide-react";
-import type { ExtractResponse } from "../types";
+import type { ExtractResponse, Filters, ExtractedElement } from "../types";
 
 interface Props {
   data: ExtractResponse;
+  filters: Filters;
+}
+
+function getFilteredData(data: ExtractResponse, filters: Filters): ExtractResponse {
+  const filteredElements = data.elements.filter((el) => {
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      const match =
+        el.element_name.toLowerCase().includes(q) ||
+        el.element_type.toLowerCase().includes(q) ||
+        el.recommended_locator.value.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    if (filters.mode !== "All" && el.mode !== filters.mode) return false;
+    if (filters.elementType !== "All" && el.element_type !== filters.elementType) return false;
+    if (filters.stableOnly && el.recommended_locator.score < 80) return false;
+    if (el.recommended_locator.score < filters.minScore) return false;
+    return true;
+  });
+
+  return {
+    ...data,
+    elements: filteredElements,
+    total_elements: filteredElements.length,
+  };
 }
 
 function downloadBlob(content: string, filename: string, mimeType: string) {
@@ -78,37 +103,41 @@ const menuItems = [
     icon: FileJson,
     label: "Export JSON",
     desc: "Full extraction result",
-    action: (data: ExtractResponse) => {
-      downloadBlob(JSON.stringify(data, null, 2), `${data.page_name}.json`, "application/json");
+    action: (data: ExtractResponse, filters: Filters) => {
+      const filtered = getFilteredData(data, filters);
+      downloadBlob(JSON.stringify(filtered, null, 2), `${filtered.page_name}.json`, "application/json");
     },
   },
   {
     icon: FileText,
     label: "Export CSV",
     desc: "Spreadsheet-friendly",
-    action: (data: ExtractResponse) => {
-      downloadBlob(toCSV(data), `${data.page_name}.csv`, "text/csv");
+    action: (data: ExtractResponse, filters: Filters) => {
+      const filtered = getFilteredData(data, filters);
+      downloadBlob(toCSV(filtered), `${filtered.page_name}.csv`, "text/csv");
     },
   },
   {
     icon: Code2,
     label: "Export Playwright",
     desc: "TypeScript locators",
-    action: (data: ExtractResponse) => {
-      downloadBlob(toPlaywright(data), `${data.page_name}.locators.ts`, "text/plain");
+    action: (data: ExtractResponse, filters: Filters) => {
+      const filtered = getFilteredData(data, filters);
+      downloadBlob(toPlaywright(filtered), `${filtered.page_name}.locators.ts`, "text/plain");
     },
   },
   {
     icon: Terminal,
     label: "Export Selenium",
     desc: "Python locators",
-    action: (data: ExtractResponse) => {
-      downloadBlob(toSelenium(data), `${data.page_name}.locators.py`, "text/plain");
+    action: (data: ExtractResponse, filters: Filters) => {
+      const filtered = getFilteredData(data, filters);
+      downloadBlob(toSelenium(filtered), `${filtered.page_name}.locators.py`, "text/plain");
     },
   },
 ];
 
-export function ExportMenu({ data }: Props) {
+export function ExportMenu({ data, filters }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -139,7 +168,7 @@ export function ExportMenu({ data }: Props) {
               return (
                 <button
                   key={item.label}
-                  onClick={() => { item.action(data); setOpen(false); }}
+                  onClick={() => { item.action(data, filters); setOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg-hover transition-colors text-left group"
                 >
                   <div className="w-8 h-8 rounded-lg bg-bg-surface flex items-center justify-center flex-shrink-0 group-hover:bg-accent/10 transition-colors">

@@ -90,20 +90,22 @@ const CARDS: CardDef[] = [
   },
 ];
 
-function getCount(elements: ExtractedElement[], key: CardKey): number {
+function getCount(elements: ExtractedElement[], key: CardKey, minScore: number): number {
+  const base = elements.filter(e => e.recommended_locator.score >= minScore);
   switch (key) {
-    case "all":     return elements.length;
-    case "input":   return elements.filter((e) => e.mode === "Input").length;
-    case "action":  return elements.filter((e) => e.mode === "UserAction").length;
-    case "output":  return elements.filter((e) => e.mode === "Output").length;
-    case "stable":  return elements.filter((e) => e.recommended_locator.score >= 80).length;
-    case "unknown": return elements.filter((e) => e.mode === "Unknown").length;
+    case "all":     return base.length;
+    case "input":   return base.filter((e) => e.mode === "Input").length;
+    case "action":  return base.filter((e) => e.mode === "UserAction").length;
+    case "output":  return base.filter((e) => e.mode === "Output").length;
+    case "stable":  return base.filter((e) => e.recommended_locator.score >= 80).length;
+    case "unknown": return base.filter((e) => e.mode === "Unknown").length;
   }
 }
 
 function isActive(key: CardKey, filters: Filters): boolean {
+  // Stable card is only "active" if stableOnly is true, regardless of minScore
   switch (key) {
-    case "all":     return filters.mode === "All" && !filters.stableOnly;
+    case "all":     return filters.mode === "All" && !filters.stableOnly && filters.minScore === 0;
     case "input":   return filters.mode === "Input" && !filters.stableOnly;
     case "action":  return filters.mode === "UserAction" && !filters.stableOnly;
     case "output":  return filters.mode === "Output" && !filters.stableOnly;
@@ -114,12 +116,12 @@ function isActive(key: CardKey, filters: Filters): boolean {
 
 function applyFilter(key: CardKey, filters: Filters, onFilterChange: Props["onFilterChange"]) {
   if (isActive(key, filters)) {
-    // Toggle off → reset to All
-    onFilterChange({ ...filters, mode: "All", stableOnly: false });
+    // Toggle off → reset to All and reset minScore
+    onFilterChange({ ...filters, mode: "All", stableOnly: false, minScore: 0 });
     return;
   }
   switch (key) {
-    case "all":     onFilterChange({ ...filters, mode: "All", stableOnly: false }); break;
+    case "all":     onFilterChange({ ...filters, mode: "All", stableOnly: false, minScore: 0 }); break;
     case "input":   onFilterChange({ ...filters, mode: "Input", stableOnly: false }); break;
     case "action":  onFilterChange({ ...filters, mode: "UserAction", stableOnly: false }); break;
     case "output":  onFilterChange({ ...filters, mode: "Output", stableOnly: false }); break;
@@ -135,7 +137,7 @@ export function InteractiveStatsCards({ elements, filters, onFilterChange }: Pro
     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
       {CARDS.map((card) => {
         const Icon = card.icon;
-        const count = getCount(elements, card.key);
+        const count = getCount(elements, card.key, filters.minScore);
         const active = isActive(card.key, filters);
         const pct = total > 0 && card.key !== "all" ? Math.round((count / total) * 100) : 100;
 

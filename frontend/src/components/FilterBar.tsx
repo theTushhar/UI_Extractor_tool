@@ -73,10 +73,11 @@ export function FilterBar({ filters, onChange, availableTypes, totalCount, filte
     filters.elementType !== "All",
     filters.stableOnly,
     filters.search.length > 0,
+    filters.minScore > 0,
   ].filter(Boolean).length;
 
   function reset() {
-    onChange({ search: "", mode: "All", elementType: "All", stableOnly: false });
+    onChange({ search: "", mode: "All", elementType: "All", stableOnly: false, minScore: 0 });
   }
 
   return (
@@ -116,6 +117,20 @@ export function FilterBar({ filters, onChange, availableTypes, totalCount, filte
         options={["All", ...availableTypes]}
         onChange={(v) => onChange({ ...filters, elementType: v })}
       />
+
+      {/* Score filter */}
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-bg-border bg-bg-surface hover:border-primary/40 transition-all group">
+        <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider flex-shrink-0">Score ≥ {filters.minScore}</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={filters.minScore}
+          onChange={(e) => onChange({ ...filters, minScore: parseInt(e.target.value) })}
+          className="w-16 accent-primary h-1 bg-bg-border rounded-lg appearance-none cursor-pointer group-hover:bg-bg-hover"
+        />
+      </div>
 
       {/* Stable only toggle */}
       <button

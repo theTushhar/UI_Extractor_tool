@@ -69,4 +69,5 @@ export interface Filters {
   mode: string;        // "All" | ElementMode
   elementType: string; // "All" | specific type
   stableOnly: boolean;
+  minScore: number;
 }
