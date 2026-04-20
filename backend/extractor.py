@@ -23,11 +23,14 @@ INTERESTING_TAGS = {
     "h4",
     "h5",
     "h6",
+    "table",
+    "th",
+    "fieldset",
 }
 
 SAFE_CSS_TOKEN = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
 DYNAMIC_TOKEN_PATTERN = re.compile(r"(\d{3,}|[a-f0-9]{8,})$", re.I)
-TEXT_TAGS = {"button", "a", "label", "h1", "h2", "h3", "h4", "h5", "h6"}
+TEXT_TAGS = {"button", "a", "label", "h1", "h2", "h3", "h4", "h5", "h6", "th", "legend"}
 TEST_ID_KEYS = ["data-testid", "data-test", "data-cy", "data-qa"]
 
 
@@ -67,8 +70,31 @@ def _css_attr_literal(value: str) -> str:
     return f'"{escaped}"'
 
 
+def _escape_css_id(element_id: str) -> str:
+    # Escape colons and other special characters for CSS selectors
+    return element_id.replace(":", "\\:")
+
+
 def _normalize_space_text(text: str) -> str:
     return " ".join(text.split())
+
+
+def _clean_name(name: str) -> str:
+    if not name:
+        return ""
+    # 1) Handle CamelCase and kebab-case
+    name = re.sub(r"([a-z])([A-Z])", r"\1 \2", name)
+    name = name.replace("-", " ").replace("_", " ").replace(":", " ")
+    
+    # 2) Remove common technical suffixes/prefixes if they are redundant
+    name = re.sub(r"\b(btn|button|lnk|link|txt|text|id|input|select|form)\b", "", name, flags=re.I)
+    
+    # 3) Title Case and strip
+    words = [w.capitalize() for w in name.split() if w]
+    cleaned = " ".join(words)
+    
+    # 4) Limit length
+    return cleaned[:80].strip()
 
 
 def _is_dynamic_token(value: str) -> bool:
@@ -138,6 +164,12 @@ def _infer_type_mode(el: HtmlElement) -> tuple[str, str]:
         return "Image", "Output"
     if tag == "label":
         return "Label", "Output"
+    if tag == "table":
+        return "Table", "Output"
+    if tag == "th":
+        return "Column Header", "Output"
+    if tag == "fieldset":
+        return "Section", "Output"
     if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
         return "Heading", "Output"
     if tag == "input":
@@ -156,29 +188,92 @@ def _infer_type_mode(el: HtmlElement) -> tuple[str, str]:
 
 
 def _derive_name(el: HtmlElement, root: HtmlElement, fallback_type: str) -> str:
+    # 1) Try explicit labels (for attribute)
     element_id = el.get("id")
+    name = ""
     if element_id:
         labels = root.xpath(f"//label[@for={_xpath_literal(element_id)}]")
         if labels:
-            label_text = _normalize_space_text(" ".join(labels[0].itertext()))
-            if label_text:
-                return label_text
+            name = _normalize_space_text(" ".join(labels[0].itertext()))
 
-    parent_label = el.xpath("ancestor::label[1]")
-    if parent_label:
-        nested = _normalize_space_text(" ".join(parent_label[0].itertext()))
-        if nested:
-            return nested
+    # 2) Try implicit labels (nested)
+    if not name:
+        parent_label = el.xpath("ancestor::label[1]")
+        if parent_label:
+            name = _normalize_space_text(" ".join(parent_label[0].itertext()))
 
-    for attr in ["aria-label", "placeholder", "title", "alt", "name", "id", "value"]:
-        value = (el.get(attr) or "").strip()
-        if value:
-            return value
+    # 3) Proximity Search (Preceding sibling text)
+    if not name and el.tag.lower() in {"input", "select", "textarea"}:
+        # Look for text nodes in preceding siblings
+        preceding = el.xpath("preceding-sibling::text()[1]")
+        if preceding:
+            text = _normalize_space_text(str(preceding[0]))
+            if text and len(text) > 1:
+                name = text
 
-    text = _normalize_space_text(" ".join(el.itertext()))
-    if text:
-        return text[:80]
-    return f"Unnamed {fallback_type}"
+    # 4) Semantic attributes
+    if not name:
+        for attr in ["aria-label", "placeholder", "title", "alt", "name", "id", "value"]:
+            val = (el.get(attr) or "").strip()
+            if val:
+                name = val
+                break
+
+    # 5) Icon/Tooltip Support (nested img alt)
+    if not name:
+        nested_imgs = el.xpath(".//img[@alt or @title]")
+        if nested_imgs:
+            name = nested_imgs[0].get("alt") or nested_imgs[0].get("title")
+
+    # 6) Inner text (last resort)
+    if not name:
+        name = _normalize_space_text(" ".join(el.itertext()))
+
+    # Clean the base name
+    name = _clean_name(name) if name else f"Unnamed {fallback_type}"
+    
+    # 7) Table-Aware Context
+    table_context = ""
+    td_ancestors = el.xpath("ancestor::td[1]")
+    if td_ancestors:
+        td = td_ancestors[0]
+        table = td.xpath("ancestor::table[1]")
+        if table:
+            # Try to find column index
+            cell_index = len(td.xpath("preceding-sibling::td"))
+            # Look for header (th) at that index
+            headers = table[0].xpath(f".//th[{cell_index + 1}]")
+            if headers:
+                col_name = _clean_name(_normalize_space_text(" ".join(headers[0].itertext())))
+                if col_name:
+                    table_context = col_name
+
+    # 8) Hierarchical Naming: Prepend section context
+    section_title = ""
+    for ancestor in el.iterancestors():
+        if ancestor.tag == "fieldset":
+            legends = ancestor.xpath("./legend")
+            if legends:
+                section_title = _clean_name(_normalize_space_text(" ".join(legends[0].itertext())))
+                break
+        
+        cls = (ancestor.get("class") or "").lower()
+        if any(token in cls for token in ["subtitle", "header", "heading", "title"]):
+            text = _normalize_space_text(" ".join(ancestor.itertext()))
+            if text and len(text) < 100:
+                section_title = _clean_name(text)
+                break
+
+    # Final Assembly
+    parts = []
+    if section_title:
+        parts.append(section_title)
+    if table_context:
+        parts.append(table_context)
+    if name and name not in parts:
+        parts.append(name)
+    
+    return " - ".join(parts) if parts else f"Unnamed {fallback_type}"
 
 
 def _select_count(root: HtmlElement, strategy: str, value: str) -> int:
@@ -195,14 +290,25 @@ def _add_with_attribute(raw: list[RawCandidate], tag: str, attr: str, value: str
     if not value:
         return
     quoted = _xpath_literal(value)
-    if SAFE_CSS_TOKEN.match(value) and attr in {"id"}:
+    if attr == "id":
+        escaped_id = _escape_css_id(value)
         raw.append(
             RawCandidate(
                 strategy=f"css:{label}",
-                value=f"#{value}",
+                value=f"#{escaped_id}",
                 base_score=base,
                 intended_stable=stable,
-                rationale=f"Uses unique-looking {attr} attribute.",
+                rationale=f"Uses unique-looking {attr} attribute (escaped).",
+            )
+        )
+    elif SAFE_CSS_TOKEN.match(value):
+        raw.append(
+            RawCandidate(
+                strategy=f"css:{label}",
+                value=f"{tag}[{attr}={value}]",
+                base_score=base - 2,
+                intended_stable=stable,
+                rationale=f"Uses {attr} attribute match.",
             )
         )
     else:
@@ -213,7 +319,7 @@ def _add_with_attribute(raw: list[RawCandidate], tag: str, attr: str, value: str
                 value=f"{tag}[{attr}={css_value}]",
                 base_score=base - 2,
                 intended_stable=stable,
-                rationale=f"Uses {attr} attribute match.",
+                rationale=f"Uses {attr} attribute match (quoted).",
             )
         )
 
