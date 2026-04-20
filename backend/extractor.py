@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from lxml import etree, html
 from lxml.cssselect import CSSSelector
 from lxml.html import HtmlElement
+from mhtml_parser import clean_mhtml_to_html
 
 
 INTERESTING_TAGS = {
@@ -551,6 +552,7 @@ def _recommended_reason(locator: Locator) -> str:
 
 
 def extract_from_html(html_content: str) -> dict:
+    html_content = clean_mhtml_to_html(html_content)
     root = html.fromstring(html_content)
     tree = root.getroottree()
 
@@ -624,6 +626,7 @@ def verify_locators_in_html(html_content: str, elements_data: list[dict]) -> dic
     """
     Verifies a list of locators against HTML content using absolute XPath as ground truth.
     """
+    html_content = clean_mhtml_to_html(html_content)
     root = html.fromstring(html_content)
     tree = root.getroottree()
     
