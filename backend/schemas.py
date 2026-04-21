@@ -44,6 +44,7 @@ class ExtractResponse(BaseModel):
     elements: list[ExtractedElement]
     url: str | None = None
     screenshot: str | None = None
+    html: str | None = None
 
 
 class VerifyRequest(BaseModel):
