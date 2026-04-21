@@ -2,6 +2,8 @@ from strategies.test_attr import TestAttributeStrategy
 from strategies.identity import IdentityStrategy
 from strategies.text_based import TextAndAttributeStrategy
 from strategies.structural import StructuralStrategy
+from strategies.aria_role import AriaRoleStrategy
+from strategies.table import TableStrategy
 
 class StrategyRegistry:
     def __init__(self):
@@ -9,6 +11,8 @@ class StrategyRegistry:
             TestAttributeStrategy(),
             IdentityStrategy(),
             TextAndAttributeStrategy(),
+            AriaRoleStrategy(),
+            TableStrategy(),
             StructuralStrategy(),
         ]
 

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 @dataclass
 class RawCandidate:
@@ -7,6 +7,7 @@ class RawCandidate:
     base_score: int
     intended_stable: bool
     rationale: str
+    internal_xpath: str = field(default="")
 
 @dataclass
 class Locator:
@@ -17,3 +18,4 @@ class Locator:
     score: int
     risk_level: str
     rationale: str
+    internal_xpath: str = field(default="")

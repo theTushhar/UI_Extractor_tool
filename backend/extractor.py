@@ -30,7 +30,7 @@ def _build_locators(el: HtmlElement, root: HtmlElement) -> list[Locator]:
     
     for candidate in raw_candidates:
         if not candidate.value: continue
-        unique = select_count(root, candidate.strategy, candidate.value) == 1
+        unique = select_count(root, candidate.strategy, candidate.value, candidate.internal_xpath) == 1
         stable = candidate.intended_stable and unique
         risk = _risk_level(candidate.strategy, unique, stable)
         score = _score(candidate.base_score, unique, stable, risk)
@@ -45,6 +45,7 @@ def _build_locators(el: HtmlElement, root: HtmlElement) -> list[Locator]:
                 score=score,
                 risk_level=risk,
                 rationale=candidate.rationale,
+                internal_xpath=candidate.internal_xpath,
             )
 
     return sorted(dedup.values(), key=lambda item: item.score, reverse=True)
@@ -93,6 +94,7 @@ def extract_from_html(html_content: str) -> dict:
                 "value": recommended.value,
                 "score": recommended.score,
                 "reason": recommended.rationale,
+                "internal_xpath": recommended.internal_xpath,
             },
             "locators": [
                 {
@@ -101,6 +103,7 @@ def extract_from_html(html_content: str) -> dict:
                     "value": loc.value,
                     "unique": loc.unique,
                     "score": loc.score,
+                    "internal_xpath": loc.internal_xpath,
                 }
                 for idx, loc in enumerate(locators)
             ],
@@ -125,10 +128,17 @@ def verify_locators_in_html(html_content: str, elements_data: list[dict]) -> dic
         for loc in element.get("locators", []):
             strategy = loc.get("strategy", "")
             value = loc.get("value", "")
+            internal_xpath = loc.get("internal_xpath", "")
             matches = []
             try:
-                if strategy.startswith("xpath:"): matches = root.xpath(value)
-                else: matches = html.CSSSelector(value)(root) # Simple fallback
+                if internal_xpath:
+                    matches = root.xpath(internal_xpath)
+                elif strategy.startswith("xpath:"):
+                    matches = root.xpath(value)
+                elif strategy.startswith("playwright:"):
+                    matches = [] # Cannot verify without internal_xpath
+                else:
+                    matches = html.CSSSelector(value)(root)
             except: pass
             
             status = "broken"

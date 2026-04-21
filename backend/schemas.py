@@ -6,6 +6,10 @@ class ExtractRequest(BaseModel):
     html: str = Field(..., min_length=1, description="Raw HTML content")
 
 
+class URLRequest(BaseModel):
+    url: str = Field(..., description="Target URL to extract from")
+
+
 class LocatorCandidate(BaseModel):
     rank: int
     strategy: str
@@ -38,6 +42,8 @@ class ExtractResponse(BaseModel):
     total_elements: int
     stable_elements: int
     elements: list[ExtractedElement]
+    url: str | None = None
+    screenshot: str | None = None
 
 
 class VerifyRequest(BaseModel):

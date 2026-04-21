@@ -6,9 +6,11 @@ from schemas import (
     ExtractRequest, 
     ExtractResponse,
     VerifyRequest,
-    VerifyResponse
+    VerifyResponse,
+    URLRequest
 )
 from extractor import extract_from_html, verify_locators_in_html
+from playwright_service import capture_page_data
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,6 +50,26 @@ def extract_locators(payload: ExtractRequest) -> ExtractResponse:
         extracted.get("stable_elements", 0),
     )
     return ExtractResponse.model_validate(extracted)
+
+
+@app.post("/v1/locators/extract-url", response_model=ExtractResponse)
+async def extract_locators_from_url(payload: URLRequest) -> ExtractResponse:
+    request_id = str(uuid.uuid4())[:8]
+    logger.info("URL Extraction started: id=%s url=%s", request_id, payload.url)
+    
+    try:
+        extracted = await capture_page_data(payload.url)
+        logger.info(
+            "URL Extraction completed: id=%s elements=%d stable=%d",
+            request_id,
+            extracted.get("total_elements", 0),
+            extracted.get("stable_elements", 0),
+        )
+        return ExtractResponse.model_validate(extracted)
+    except Exception as e:
+        logger.error("URL Extraction failed: id=%s error=%s", request_id, str(e))
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
     
 
 @app.post("/v1/locators/verify", response_model=VerifyResponse)
