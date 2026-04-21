@@ -10,12 +10,23 @@ class URLRequest(BaseModel):
     url: str = Field(..., description="Target URL to extract from")
 
 
+class HighlightRequest(BaseModel):
+    strategy: str
+    value: str
+    internal_xpath: str | None = ""
+
+
+class VerifySessionRequest(BaseModel):
+    elements: list[dict]
+
+
 class LocatorCandidate(BaseModel):
     rank: int
     strategy: str
     value: str
     unique: bool
     score: int
+    internal_xpath: str | None = ""
 
 
 class RecommendedLocator(BaseModel):
@@ -24,6 +35,7 @@ class RecommendedLocator(BaseModel):
     value: str
     score: int
     reason: str
+    internal_xpath: str | None = ""
 
 
 class ExtractedElement(BaseModel):

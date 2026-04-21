@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronUp, ChevronDown, Copy, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import { ChevronUp, ChevronDown, Copy, ShieldCheck, ShieldAlert, ShieldX, Target } from "lucide-react";
 import type { ExtractedElement, ElementMode, SortField, SortDir, Filters, VerifiedElement } from "../../types";
 
 interface Props {
@@ -8,6 +8,8 @@ interface Props {
   onSelectElement: (el: ExtractedElement) => void;
   onCopy: (value: string) => void;
   verifications?: VerifiedElement[];
+  onHighlight?: (el: ExtractedElement) => void;
+  isSessionActive?: boolean;
 }
 
 const modeStyles: Record<ElementMode, string> = {
@@ -88,7 +90,7 @@ const columns: { key: SortField; label: string; width?: string }[] = [
   { key: "locators", label: "Locators", width: "w-[10%]" },
 ];
 
-export function ElementsTable({ elements, filters, onSelectElement, onCopy, verifications }: Props) {
+export function ElementsTable({ elements, filters, onSelectElement, onCopy, verifications, onHighlight, isSessionActive }: Props) {
   const [sortField, setSortField] = useState<SortField>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -197,7 +199,7 @@ export function ElementsTable({ elements, filters, onSelectElement, onCopy, veri
                   </span>
                 </div>
 
-              {/* Recommended locator value + copy */}
+              {/* Recommended locator value + copy + highlight */}
               <div className="w-[20%] flex items-center gap-2 justify-end min-w-0 pl-2">
                 <code
                   className="text-xs font-mono text-slate-400 truncate max-w-[120px] group-hover:text-accent transition-colors"
@@ -205,6 +207,20 @@ export function ElementsTable({ elements, filters, onSelectElement, onCopy, veri
                 >
                   {el.recommended_locator.value}
                 </code>
+
+                {isSessionActive && onHighlight && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onHighlight(el);
+                    }}
+                    title="Highlight in browser"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border border-bg-border hover:border-accent hover:text-accent text-slate-500"
+                  >
+                    <Target size={12} />
+                  </button>
+                )}
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -230,7 +246,7 @@ export function ElementsTable({ elements, filters, onSelectElement, onCopy, veri
             <span className="text-slate-400 font-medium">{elements.length}</span> elements
           </span>
           <span className="text-xs text-slate-600">
-            Click row to inspect • Hover to copy
+            Click row to inspect • {isSessionActive ? "Target icon highlights in browser" : "Hover to copy"}
           </span>
         </div>
       )}

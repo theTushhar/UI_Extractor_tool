@@ -86,24 +86,24 @@ export function LocatorRow({ locator, isRecommended, onCopy, verification }: Pro
         )}
 
         {/* Verification Status */}
-        {verification && (
+        {(verification || locator.status) && (
           <div className="flex items-center gap-1.5 ml-2">
-             {verification.status === 'correct' && (
+             {(verification?.status === 'correct' || locator.status === 'correct') && (
                <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                  <ShieldCheck size={10} /> Correct
                </span>
              )}
-             {verification.status === 'duplicate' && (
+             {(verification?.status === 'duplicate' || (locator.status === 'shifted' && locator.actual_matches && locator.actual_matches > 1)) && (
                <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                 <ShieldAlert size={10} /> Duplicate ({verification.match_count})
+                 <ShieldAlert size={10} /> Duplicate ({verification?.match_count || locator.actual_matches})
                </span>
              )}
-             {verification.status === 'broken' && (
+             {(verification?.status === 'broken' || locator.status === 'broken') && (
                <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30">
                  <ShieldX size={10} /> Broken
                </span>
              )}
-             {verification.status === 'misidentified' && (
+             {(verification?.status === 'misidentified' || (locator.status === 'shifted' && locator.actual_matches === 1)) && (
                <span className="flex items-center gap-1 text-[10px] font-bold uppercase py-0.5 px-1.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
                  <ShieldAlert size={10} /> Wrong Element
                </span>

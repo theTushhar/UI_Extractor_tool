@@ -6,6 +6,9 @@ export interface LocatorCandidate {
   value: string;
   unique: boolean;
   score: number;
+  internal_xpath?: string;
+  status?: "correct" | "broken" | "shifted";
+  actual_matches?: number;
 }
 
 export interface RecommendedLocator {
@@ -14,6 +17,8 @@ export interface RecommendedLocator {
   value: string;
   score: number;
   reason: string;
+  internal_xpath?: string;
+  status?: "correct" | "broken" | "shifted";
 }
 
 export type ElementMode = "Input" | "Output" | "UserAction" | "Unknown";
@@ -27,6 +32,12 @@ export interface ExtractedElement {
   attributes: Record<string, string>;
   recommended_locator: RecommendedLocator;
   locators: LocatorCandidate[];
+  rect?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
 
 export interface ExtractResponse {
@@ -34,6 +45,9 @@ export interface ExtractResponse {
   total_elements: number;
   stable_elements: number;
   elements: ExtractedElement[];
+  url?: string;
+  screenshot?: string;
+  html?: string;
 }
 
 export interface VerificationResult {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Scan, Loader2, AlertCircle, Sparkles, Code2, RotateCcw, ChevronDown, ChevronUp, ShieldCheck, Globe, Maximize2, ExternalLink } from "lucide-react";
+import { Scan, Loader2, AlertCircle, Sparkles, Code2, RotateCcw, ChevronDown, ChevronUp, ShieldCheck, Globe, Maximize2, ExternalLink, Play, Square, Camera } from "lucide-react";
 import type { ExtractedElement } from "./types";
 import { InteractiveStatsCards } from "./components/extractor/InteractiveStatsCards";
 import { FilterBar } from "./components/extractor/FilterBar";
@@ -27,12 +27,16 @@ export default function App() {
     setInputExpanded,
     handleExtract,
     handleExtractURL,
+    handleStartSession,
+    handleCaptureSession,
+    handleStopSession,
+    handleHighlight,
     handleVerify,
     handleReset,
+    isSessionActive,
   } = useExtractor();
 
   const [activeTab, setActiveTab] = useState<"html" | "url">("html");
-  const [showScreenshot, setShowScreenshot] = useState(true);
 
   const {
     filters,
@@ -52,6 +56,9 @@ export default function App() {
 
   const onExtract = () => handleExtract(setFilters);
   const onExtractURL = () => handleExtractURL(setFilters);
+  const onStartSession = () => handleStartSession();
+  const onCaptureSession = () => handleCaptureSession(setFilters);
+  const onStopSession = () => handleStopSession();
   const onVerify = () => handleVerify(setToast);
   const onReset = () => {
     handleReset(setFilters);
@@ -98,8 +105,8 @@ export default function App() {
             )}
             <div className="h-4 w-px bg-bg-border" />
             <div className="flex items-center gap-2 text-xs text-slate-500 bg-bg-surface/50 px-2 py-1 rounded-full border border-bg-border">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              Live Engine Ready
+              <div className={`w-1.5 h-1.5 rounded-full ${isSessionActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`} />
+              {isSessionActive ? 'Live Session Active' : 'Live Engine Ready'}
             </div>
           </div>
         </div>
@@ -226,9 +233,9 @@ export default function App() {
              <div className="p-4 flex flex-col items-center justify-center min-h-[16rem] bg-gradient-to-b from-bg-surface to-bg-base/20">
                 <div className="w-full max-w-2xl text-center space-y-6">
                    <div className="space-y-2">
-                      <h3 className="text-lg font-bold text-slate-100">Browse Live Website</h3>
+                      <h3 className="text-lg font-bold text-slate-100">Live Browser Session</h3>
                       <p className="text-xs text-slate-500 leading-relaxed">
-                        Extract locators from any live URL. We'll render the page with Playwright, handle dynamic JavaScript content, and capture a full visual state.
+                        Navigate to any website, log in manually, and capture the dashboard or any protected state.
                       </p>
                    </div>
                    
@@ -244,31 +251,45 @@ export default function App() {
                           placeholder="https://app.example.com/login"
                           value={urlInput}
                           onChange={(e) => setUrlInput(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && onExtractURL()}
                         />
-                        <button
-                          onClick={onExtractURL}
-                          disabled={!urlInput.trim() || loading}
-                          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-accent text-white hover:brightness-110 active:scale-95 shadow-lg shadow-accent/20"
-                        >
-                          {loading ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <ExternalLink size={14} />
-                          )}
-                          Go
-                        </button>
+                        
+                        {!isSessionActive ? (
+                          <button
+                            onClick={onStartSession}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-primary text-white hover:brightness-110 active:scale-95 shadow-lg shadow-primary/20"
+                          >
+                            {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                            Start Session
+                          </button>
+                        ) : (
+                          <div className="flex gap-2">
+                             <button
+                                onClick={onCaptureSession}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-600 text-white hover:brightness-110 active:scale-95 shadow-lg shadow-emerald-900/20"
+                              >
+                                {loading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                                Capture
+                              </button>
+                              <button
+                                onClick={onStopSession}
+                                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                                title="Stop Session"
+                              >
+                                <Square size={14} fill="currentColor" />
+                              </button>
+                          </div>
+                        )}
                       </div>
                    </div>
 
-                   {loading && (
+                   {isSessionActive && (
                       <div className="flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
-                         <div className="flex gap-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce [animation-delay:-0.3s]" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce [animation-delay:-0.15s]" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" />
+                         <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Browser is open — Please log in and go to your dashboard</span>
                          </div>
-                         <span className="text-[11px] font-bold text-accent uppercase tracking-widest">Waking up browser...</span>
                       </div>
                    )}
                 </div>
@@ -283,7 +304,7 @@ export default function App() {
                 Processing complete
               </div>
               <p className="text-[11px] text-slate-600 italic">
-                Extraction results are shown below. Expand to re-run with different source.
+                Extraction results are shown below. {isSessionActive ? "Continue your session to capture more pages." : "Expand to re-run with different source."}
               </p>
             </div>
           )}
@@ -306,10 +327,8 @@ export default function App() {
         {results && !loading && (
           <div className="space-y-6 animate-in fade-in duration-500">
             
-            <div className="flex gap-6 items-start">
-              {/* Left Column: Metrics and Tools */}
-              <div className="flex-1 space-y-6 min-w-0">
-                <InteractiveStatsCards
+            <div className="space-y-6 min-w-0">
+              <InteractiveStatsCards
                   elements={results.elements}
                   filters={filters}
                   onFilterChange={setFilters}
@@ -346,40 +365,9 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Right Column: Live Screenshot Preview (Sticky) */}
-              {results.screenshot && (
-                <div className={`transition-all duration-500 ease-in-out ${showScreenshot ? 'w-80 opacity-100' : 'w-10 opacity-50'}`}>
-                   <div className="sticky top-20 rounded-2xl border border-bg-border bg-bg-surface shadow-2xl overflow-hidden group">
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-bg-border bg-bg-elevated/80">
-                         <div className="flex items-center gap-2 overflow-hidden">
-                            <Globe size={11} className="text-accent flex-shrink-0" />
-                            {showScreenshot && <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider truncate">Visual State</span>}
-                         </div>
-                         <button 
-                            onClick={() => setShowScreenshot(!showScreenshot)}
-                            className="p-1 hover:bg-bg-hover rounded-md text-slate-500 hover:text-slate-200 transition-colors"
-                          >
-                            <Maximize2 size={12} />
-                         </button>
-                      </div>
-                      
-                      {showScreenshot && (
-                        <div className="relative aspect-[3/4] overflow-auto scrollbar-hide bg-black/40 group-hover:bg-transparent transition-colors">
-                           <img 
-                             src={`data:image/png;base64,${results.screenshot}`} 
-                             alt="Page Screenshot" 
-                             className="w-full h-auto grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
-                           />
-                           <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] pointer-events-none" />
-                        </div>
-                      )}
-                   </div>
-                </div>
-              )}
-            </div>
+              {/* Filter and Table */}
+              <div className="space-y-4">
 
-            {/* Filter and Table */}
-            <div className="space-y-4">
                <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <FilterBar
@@ -398,6 +386,8 @@ export default function App() {
                  onSelectElement={setSelectedElement}
                  onCopy={handleCopy}
                  verifications={verifications ?? undefined}
+                 onHighlight={handleHighlight}
+                 isSessionActive={isSessionActive}
                />
             </div>
           </div>

@@ -52,4 +52,20 @@ export const api = {
   verifyLocators: async (html: string, elements: any[]) => {
     return postJson('/v1/locators/verify', { html, elements });
   },
+  // Session management
+  startSession: async (url: string) => {
+    return postJson('/v1/session/start', { url });
+  },
+  captureSession: async () => {
+    return postJson('/v1/session/capture');
+  },
+  verifySessionLocators: async (elements: any[]) => {
+    return postJson('/v1/session/verify', { elements });
+  },
+  stopSession: async () => {
+    return postJson('/v1/session/stop');
+  },
+  highlightElement: async (strategy: string, value: string, internalXpath?: string) => {
+    return postJson('/v1/session/highlight', { strategy, value, internal_xpath: internalXpath });
+  },
 };
